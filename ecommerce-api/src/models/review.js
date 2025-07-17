@@ -17,7 +17,7 @@ const reviewSchema = new mongoose.Schema({
         min: 1,
         max: 5,
     },
-    coment: {
+    comment: {
         type: String,
         max: 500,
     },
