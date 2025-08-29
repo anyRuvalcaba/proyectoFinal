@@ -1,15 +1,17 @@
-const Category = require("../models/category");
+import Category from "../models/category.js";
+import errorHandler from "../middlewares/errorHandler.js";
 
-async function getCategories(req, res) {
+async function getCategories(req, res, next) {
   try {
-    const categories = await Category.find().populate("parentCategory");
+    const categories = await Category.find()
+      .populate("parentCategory")
+      .sort({ name: 1 });
     res.status(200).json(categories);
   } catch (error) {
-    res.status(500).send({ error });
+    next(error);
   }
 }
-
-async function getCategoryById(req, res) {
+async function getCategoryById(req, res, next) {
   try {
     const category = await Category.findById(req.params.id).populate(
       "parentCategory"
@@ -19,64 +21,115 @@ async function getCategoryById(req, res) {
     }
     res.status(200).json(category);
   } catch (error) {
-    res.status(500).send({ error });
+    next(error);
   }
 }
-
-async function createCategory(req, res) {
-  const { name, description, parentCategory, imageUrl } = req.body;
-
+async function createCategory(req, res, next) {
   try {
+    const { name, description, parentCategory, imageURL } = req.body;
     const newCategory = new Category({
       name,
       description,
       parentCategory: parentCategory || null,
-      imageUrl: imageUrl || null,
+      imageURL: imageURL || null,
     });
-
     await newCategory.save();
     res.status(201).json(newCategory);
   } catch (error) {
-    res.status(500).send({ error });
+    next(error);
   }
 }
-
-async function updateCategory(req, res) {
-  const { name, description, parentCategory, imageUrl } = req.body;
-
+async function updateCategory(req, res, next) {
   try {
+    const { name, description, parentCategory, imageURL } = req.body;
+    const idCategory = req.params.id;
+
     const updatedCategory = await Category.findByIdAndUpdate(
-      req.params.id,
-      { name, description, parentCategory, imageUrl },
+      idCategory,
+      { name, description, parentCategory, imageURL },
       { new: true }
     );
 
     if (!updatedCategory) {
       return res.status(404).json({ message: "Category not found" });
     }
-
     res.status(200).json(updatedCategory);
   } catch (error) {
-    res.status(500).send({ error });
+    next(error);
   }
 }
-
-async function deleteCategory(req, res) {
+async function deleteCategory(req, res, next) {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
-    if (!category) {
+    const idCategory = req.params.id;
+    const deletedCategory = await Category.findByIdAndDelete(idCategory);
+    if (!deletedCategory) {
       return res.status(404).json({ message: "Category not found" });
     }
-    res.status(200).json({ message: "Category deleted successfully" });
+    res.status(204).send();
   } catch (error) {
-    res.status(500).send({ error });
+    next(error);
   }
 }
 
-module.exports = {
+async function searchCategories(req, res, next) {
+  try {
+    const { q, parentCategory, sort, order, limit = 10, page = 1 } = req.query;
+    let filters = {};
+
+    if (q) {
+      filters.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
+      ];
+    }
+    if (parentCategory) {
+      filters.parentCategory = parentCategory;
+    }
+
+    let sortOptions = {};
+    if (sort) {
+      const sortOrder = order === "desc" ? -1 : 1;
+      sortOptions[sort] = sortOrder;
+    } else {
+      sortOptions.name = -1;
+    }
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const categories = await Category.find(filters)
+      .populate("parentCategory")
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalResults = await Category.countDocuments(filters);
+    const totalPages = Math.ceil(totalResults / parseInt(limit));
+
+    res.status(200).json({
+      categories,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalResults,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1,
+      },
+      filters: {
+        searchTerm: q || null,
+        parentCategory: parentCategory || null,
+        sort: sort || "name",
+        order: order || "desc",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export {
   getCategories,
   getCategoryById,
   createCategory,
   updateCategory,
   deleteCategory,
+  searchCategories
 };

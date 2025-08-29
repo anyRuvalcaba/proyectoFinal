@@ -1,28 +1,28 @@
 import mongoose from 'mongoose';
 
 const reviewSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Aggregate.Schema.Types.ObjectId,
-        ref: 'User',
-        require: true,
-    },
-    product: {
-        type: mongoose.Aggregate.Schema.Types.ObjectId,
-        ref: 'Product',
-        require: true,
-    },
-    rating: {
-        type: Number,
-        require: true,
-        min: 1,
-        max: 5,
-    },
-    comment: {
-        type: String,
-        max: 500,
-    },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true,
+  },
+  rating: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 5,
+  },
+  comment: {
+    type: String,
+    max: 500,
+  }
 });
 
-const Review = mongoose.model('Review',reviewSchema);
+const Review = mongoose.model('Review', reviewSchema);
 
-module.exports=Review;
+export default Review;

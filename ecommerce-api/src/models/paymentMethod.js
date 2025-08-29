@@ -9,7 +9,7 @@ const paymentMethodSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['credit_card', 'debit_card', 'paypal', 'bank_transfer', 'cash_on_delivery'],
+    enum: ['credit_card', 'debit_card', 'paypal'],
   },
   // Para tarjetas de crédito/débito
   // Primer dígito: Indica el esquema de la tarjeta (por ejemplo, 4 para Visa, 5 para Mastercard).
@@ -48,4 +48,4 @@ const paymentMethodSchema = new mongoose.Schema({
 
 const PaymentMethod = mongoose.model('PaymentMethod', paymentMethodSchema);
 
-module.exports = PaymentMethod;
+export default PaymentMethod;
